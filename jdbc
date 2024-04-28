@@ -1,0 +1,125 @@
+import java.sql.*;
+
+public class DatabaseOperations {
+    private static final String DB_URL = "jdbc:sqlite:C://sqlite//java.db";
+
+    public static void main(String[] args) {
+        try {
+            // Register JDBC driver
+            Class.forName("org.sqlite.JDBC");
+
+            // Establish connection
+            Connection con = DriverManager.getConnection(DB_URL);
+
+            // Create table if not exists
+            createTable(con);
+
+            // Insert data into the table
+            insertData(con);
+
+            // Delete record for Roll_No 5
+            deleteRecord(con, 5);
+
+            // Update city from Sangli to Pune
+            updateCity(con, "Sangli", "Pune");
+
+            // Display names of students with marks greater than 60
+            displayStudentsAbove60(con);
+
+            // Display students according to their marks (Descending order)
+            displayStudentsDescending(con);
+
+            // Close connection
+            con.close();
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error loading SQLite JDBC driver: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static void createTable(Connection con) throws SQLException {
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS Student (" +
+                "Roll_No INTEGER PRIMARY KEY," +
+                "Name TEXT," +
+                "City TEXT," +
+                "Grade CHAR," +
+                "Marks REAL)";
+        Statement stmt = con.createStatement();
+        stmt.executeUpdate(createTableQuery);
+        stmt.close();
+    }
+
+    private static void insertData(Connection con) throws SQLException {
+        String insertQuery = "INSERT INTO Student (Roll_No, Name, City, Grade, Marks) VALUES (?, ?, ?, ?, ?)";
+        PreparedStatement pstmt = con.prepareStatement(insertQuery);
+
+        // Inserting data for each student
+        insertStudent(pstmt, 1, "Atul", "Sangli", 'A', 90.50);
+        insertStudent(pstmt, 2, "Sangram", "Sangli", 'B', 70.25);
+        insertStudent(pstmt, 3, "Satya", "Mumbai", 'B', 61.36);
+        insertStudent(pstmt, 4, "Jaydeep", "Pune", 'B', 60.95);
+        insertStudent(pstmt, 5, "Prashant", "Sangli", 'C', 55.26);
+        insertStudent(pstmt, 6, "Abhi", "Pune", 'C', 55.84);
+
+        pstmt.close();
+    }
+
+    private static void insertStudent(PreparedStatement pstmt, int rollNo, String name, String city, char grade, double marks) throws SQLException {
+        pstmt.setInt(1, rollNo);
+        pstmt.setString(2, name);
+        pstmt.setString(3, city);
+        pstmt.setString(4, String.valueOf(grade));
+        pstmt.setDouble(5, marks);
+        pstmt.executeUpdate();
+    }
+
+    private static void deleteRecord(Connection con, int rollNo) throws SQLException {
+        String deleteQuery = "DELETE FROM Student WHERE Roll_No = ?";
+        PreparedStatement pstmt = con.prepareStatement(deleteQuery);
+        pstmt.setInt(1, rollNo);
+        pstmt.executeUpdate();
+        pstmt.close();
+    }
+
+    private static void updateCity(Connection con, String oldCity, String newCity) throws SQLException {
+        String updateQuery = "UPDATE Student SET City = ? WHERE City = ?";
+        PreparedStatement pstmt = con.prepareStatement(updateQuery);
+        pstmt.setString(1, newCity);
+        pstmt.setString(2, oldCity);
+        pstmt.executeUpdate();
+        pstmt.close();
+    }
+
+    private static void displayStudentsAbove60(Connection con) throws SQLException {
+        String query = "SELECT Name FROM Student WHERE Marks > 60";
+        Statement stmt = con.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        System.out.println("Students with marks greater than 60:");
+        while (rs.next()) {
+            String name = rs.getString("Name");
+            System.out.println(name);
+        }
+        rs.close();
+        stmt.close();
+    }
+
+    private static void displayStudentsDescending(Connection con) throws SQLException {
+        String query = "SELECT * FROM Student ORDER BY Marks DESC";
+        Statement stmt = con.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        System.out.println("Students sorted by marks (Descending order):");
+        while (rs.next()) {
+            int rollNo = rs.getInt("Roll_No");
+            String name = rs.getString("Name");
+            String city = rs.getString("City");
+            char grade = rs.getString("Grade").charAt(0);
+            double marks = rs.getDouble("Marks");
+            System.out.println(rollNo + "\t" + name + "\t" + city + "\t" + grade + "\t" + marks);
+        }
+        rs.close();
+        stmt.close();
+    }
+}

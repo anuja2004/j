@@ -1,0 +1,97 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class a {
+    private static final String DB_URL = "jdbc:sqlite:C://sqlite//next.db";
+
+    public static void main(String[] args) {
+        try {
+            // Register JDBC driver
+            Class.forName("org.sqlite.JDBC");
+
+            // Establish connection
+            Connection con = DriverManager.getConnection(DB_URL);
+
+            // Create table if not exists
+            createTable(con);
+
+            // Take user input for number of students
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter number of students to insert: ");
+            int numStudents = scanner.nextInt();
+
+            // Take input for each student and insert into the table
+            for (int i = 0; i < numStudents; i++) {
+                System.out.println("Enter details for student " + (i + 1) + ":");
+                System.out.print("Roll Number: ");
+                int rollNo = scanner.nextInt();
+                System.out.print("Name: ");
+                String name = scanner.next();
+                System.out.print("City: ");
+                String city = scanner.next();
+                System.out.print("Grade: ");
+                char grade = scanner.next().charAt(0);
+                System.out.print("Marks: ");
+                double marks = scanner.nextDouble();
+
+                // Insert data into the table
+                insertData(con, rollNo, name, city, grade, marks);
+            }
+
+            scanner.close();
+
+            // Display students according to their marks (Descending order)
+            displayStudentsDescending(con);
+
+            // Close connection
+            con.close();
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error loading SQLite JDBC driver: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Database error: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static void createTable(Connection con) throws SQLException {
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS Student (" +
+                "Roll_No INTEGER PRIMARY KEY," +
+                "Name TEXT," +
+                "City TEXT," +
+                "Grade CHAR," +
+                "Marks REAL)";
+        Statement stmt = con.createStatement();
+        stmt.executeUpdate(createTableQuery);
+        stmt.close();
+    }
+
+    private static void insertData(Connection con, int rollNo, String name, String city, char grade, double marks) throws SQLException {
+        String insertQuery = "INSERT INTO Student (Roll_No, Name, City, Grade, Marks) VALUES (?, ?, ?, ?, ?)";
+        PreparedStatement pstmt = con.prepareStatement(insertQuery);
+        pstmt.setInt(1, rollNo);
+        pstmt.setString(2, name);
+        pstmt.setString(3, city);
+        pstmt.setString(4, String.valueOf(grade));
+        pstmt.setDouble(5, marks);
+        pstmt.executeUpdate();
+        pstmt.close();
+    }
+
+    private static void displayStudentsDescending(Connection con) throws SQLException {
+        String query = "SELECT * FROM Student ORDER BY Marks DESC";
+        Statement stmt = con.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        System.out.println("Students sorted by marks (Descending order):");
+        while (rs.next()) {
+            int rollNo = rs.getInt("Roll_No");
+            String name = rs.getString("Name");
+            String city = rs.getString("City");
+            char grade = rs.getString("Grade").charAt(0);
+            double marks = rs.getDouble("Marks");
+            System.out.println(rollNo + "\t" + name + "\t" + city + "\t" + grade + "\t" + marks);
+        }
+        rs.close();
+        stmt.close();
+    }
+}
